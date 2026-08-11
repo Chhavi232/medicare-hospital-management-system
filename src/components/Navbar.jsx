@@ -1,102 +1,340 @@
-import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { SignedIn, SignedOut, useClerk, UserButton } from "@clerk/clerk-react";
-import { Key, Menu, User, X } from "lucide-react";
-import logo from "../assets/logo.png";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useLayoutEffect,
+} from "react";
 
-const navItems = [
-  { label: "Home", href: "/" },
-  { label: "Doctors", href: "/doctors" },
-  { label: "Services", href: "/services" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" },
-];
+import logoImg from "../assets/admin_images/logo.png";
+import { navbarStyles as ns } from "../assets/admin_images/dummyStyles";
 
-const STORAGE_KEY = "doctorToken_v1";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  NavLink,
+} from "react-router-dom";
 
-export default function Navbar() {
+import { useAuth, useUser, useClerk } from "@clerk/clerk-react";
+
+import {
+  X,
+  Menu,
+  Home,
+  UserPlus,
+  Calendar,
+  Users,
+  Grid,
+  PlusSquare,
+  List,
+} from "lucide-react";
+
+const Navbar = () => {
   const [open, setOpen] = useState(false);
-  const [doctorLoggedIn, setDoctorLoggedIn] = useState(() => Boolean(localStorage.getItem(STORAGE_KEY)));
+
+  const navInnerRef = useRef(null);
+  const indicatorRef = useRef(null);
+
   const location = useLocation();
+  const navigate = useNavigate();
+
+
   const clerk = useClerk();
 
-  useEffect(() => {
-    const refresh = () => setDoctorLoggedIn(Boolean(localStorage.getItem(STORAGE_KEY)));
-    window.addEventListener("storage", refresh);
-    window.addEventListener("doctor-auth-change", refresh);
-    return () => {
-      window.removeEventListener("storage", refresh);
-      window.removeEventListener("doctor-auth-change", refresh);
-    };
+  const { getToken, isLoaded: authLoaded } = useAuth();
+  const { isSignedIn, isLoaded: userLoaded } = useUser();
+
+  // ---------------- Indicator ----------------
+  const moveIndicator = useCallback(() => {
+    const container = navInnerRef.current;
+    const ind = indicatorRef.current;
+
+    if (!container || !ind) return;
+
+    const active = container.querySelector(".nav-item.active");
+
+    if (!active) {
+      ind.style.opacity = "0";
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const activeRect = active.getBoundingClientRect();
+
+    const left =
+      activeRect.left - containerRect.left + container.scrollLeft;
+
+    ind.style.transform = `translateX(${left}px)`;
+    ind.style.width = `${activeRect.width}px`;
+    ind.style.opacity = "1";
   }, []);
 
-  const itemClass = (href) =>
-    `rounded-md px-3 py-2 text-sm font-medium transition ${
-      location.pathname === href ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-    }`;
+  useLayoutEffect(() => {
+    moveIndicator();
+    const t = setTimeout(moveIndicator, 120);
+    return () => clearTimeout(t);
+  }, [location.pathname, moveIndicator]);
 
+  useEffect(() => {
+    const container = navInnerRef.current;
+    if (!container) return;
+
+    const onScroll = () => moveIndicator();
+    container.addEventListener("scroll", onScroll);
+
+    const ro = new ResizeObserver(moveIndicator);
+    ro.observe(container);
+
+    window.addEventListener("resize", moveIndicator);
+
+    return () => {
+      container.removeEventListener("scroll", onScroll);
+      ro.disconnect();
+      window.removeEventListener("resize", moveIndicator);
+    };
+  }, [moveIndicator]);
+
+  // ---------------- Escape close ----------------
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // ---------------- Clerk token ----------------
+  useEffect(() => {
+    let mounted = true;
+
+    const storeToken = async () => {
+      if (!authLoaded || !userLoaded) return;
+
+      if (!isSignedIn) {
+        localStorage.removeItem("clerk_token");
+        return;
+      }
+
+      try {
+        const token = await getToken();
+        if (mounted && token) {
+          localStorage.setItem("clerk_token", token);
+        }
+      } catch (err) {
+        console.warn("Token error", err);
+      }
+    };
+
+    storeToken();
+    return () => (mounted = false);
+  }, [isSignedIn, authLoaded, userLoaded, getToken]);
+
+  // ---------------- Auth ----------------
+  const handleOpenSignIn = () => {
+    if (!clerk?.openSignIn) return;
+    clerk.openSignIn();
+    navigate("/"); 
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await clerk.signOut();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      localStorage.removeItem("clerk_token");
+      navigate("/");
+    }
+  };
+
+  // ---------------- UI ----------------
   return (
-    <header className="fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
-      <nav className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <Link to="/" className="flex items-center gap-3">
-          <img src={logo} alt="MediCare" className="h-11 w-11 rounded-md object-contain" />
-          <span>
-            <span className="block text-lg font-bold text-slate-950">MediCare</span>
-            <span className="block text-xs text-slate-500">Healthcare Solutions</span>
-          </span>
-        </Link>
+    <header className={ns.header}>
+      <nav className={ns.navContainer}>
+        <div className={ns.flexContainer}>
+          {/* LOGO */}
+          <div className={ns.logoContainer}>
+            <img src={logoImg} alt="logo" className={ns.logoImage} />
 
-        <div className="hidden items-center gap-1 lg:flex">
-          {navItems.map((item) => (
-            <Link key={item.href} to={item.href} className={itemClass(item.href)}>
-              {item.label}
+            <Link to="/">
+              <div className={ns.logoLink}>MediCare</div>
+              <div className={ns.logoSubtext}>
+                Healthcare Solutions
+              </div>
             </Link>
-          ))}
-        </div>
+          </div>
 
-        <div className="hidden items-center gap-2 lg:flex">
-          <SignedOut>
-            <Link to="/doctor-admin/login" className="inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700">
-              <User size={16} /> Doctor
-            </Link>
-            <button onClick={() => clerk.openSignIn()} className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white">
-              <Key size={16} /> Patient Login
-            </button>
-          </SignedOut>
-          <SignedIn>
-            <UserButton afterSignOutUrl="/" />
-          </SignedIn>
-          {doctorLoggedIn && (
-            <Link to="/doctor-dashboard" className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">
-              Doctor Dashboard
-            </Link>
-          )}
-        </div>
+          {/* CENTER NAV */}
+          <div className={ns.centerNavContainer}>
+            <div className={ns.glowEffect}>
+              <div className={ns.centerNavInner}>
+                <div
+                  ref={navInnerRef}
+                  className={ns.centerNavScrollContainer}
+                >
+                  <CenterNavItem to="/" label="Dashboard" icon={<Home size={16} />} />
+                  <CenterNavItem to="/add" label="Add Doctor" icon={<UserPlus size={16} />} />
+                  <CenterNavItem to="/list" label="List Doctors" icon={<Users size={16} />} />
+                  <CenterNavItem to="/appointments" label="Appointments" icon={<Calendar size={16} />} />
+                  <CenterNavItem to="/service-dashboard" label="Service Dashboard" icon={<Grid size={16} />} />
+                  <CenterNavItem to="/add-service" label="Add Service" icon={<PlusSquare size={16} />} />
+                  <CenterNavItem to="/list-service" label="List Services" icon={<List size={16} />} />
+                  <CenterNavItem to="/service-appointments" label="Service Appointments" icon={<Calendar size={16} />} />
+                </div>
+              </div>
+            </div>
+          </div>
 
-        <button onClick={() => setOpen((value) => !value)} className="rounded-md border border-slate-200 p-2 lg:hidden">
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
-      </nav>
-
-      {open && (
-        <div className="border-t border-slate-200 bg-white px-4 pb-4 lg:hidden">
-          <div className="flex flex-col gap-1">
-            {navItems.map((item) => (
-              <Link key={item.href} to={item.href} onClick={() => setOpen(false)} className={itemClass(item.href)}>
-                {item.label}
-              </Link>
-            ))}
-            <Link to="/doctor-admin/login" onClick={() => setOpen(false)} className="rounded-md px-3 py-2 text-sm font-medium text-slate-600">
-              Doctor Login
-            </Link>
-            {doctorLoggedIn && (
-              <Link to="/doctor-dashboard" onClick={() => setOpen(false)} className="rounded-md px-3 py-2 text-sm font-medium text-slate-600">
-                Doctor Dashboard
-              </Link>
+          {/* RIGHT */}
+          <div className={ns.rightContainer}>
+            {isSignedIn ? (
+              <button onClick={handleSignOut} className={ns.signOutButton}>
+                Sign Out
+              </button>
+            ) : (
+              <button onClick={handleOpenSignIn} className={ns.loginButton}>
+                Login
+              </button>
             )}
+
+            <button
+              onClick={() => setOpen(!open)}
+              className={ns.mobileMenuButton}
+            >
+              {open ? <X size={18} /> : <Menu size={18} />}
+            </button>
           </div>
         </div>
-      )}
+
+        {/* mobile navigation */}
+{open && (
+  <>
+    {/* overlay */}
+    <div
+      className={ns.mobileOverlay}
+      onClick={() => setOpen(false)}
+    />
+
+    {/* menu */}
+    <div
+      className={ns.mobileMenuContainer}
+      id="mobile-menu"
+    >
+      <div className={ns.mobileMenuInner}>
+        <MobileItem
+          to="/"
+          label="Dashboard"
+          icon={<Home size={16} />}
+          onClick={() => setOpen(false)}
+        />
+
+        <MobileItem
+          to="/add"
+          label="Add Doctor"
+          icon={<UserPlus size={16} />}
+          onClick={() => setOpen(false)}
+        />
+
+        <MobileItem
+          to="/list"
+          label="List Doctors"
+          icon={<Users size={16} />}
+          onClick={() => setOpen(false)}
+        />
+
+        <MobileItem
+          to="/appointments"
+          label="Appointments"
+          icon={<Calendar size={16} />}
+          onClick={() => setOpen(false)}
+        />
+
+        <MobileItem
+          to="/service-dashboard"
+          label="Service Dashboard"
+          icon={<Grid size={16} />}
+          onClick={() => setOpen(false)}
+        />
+
+        <MobileItem
+          to="/add-service"
+          label="Add Service"
+          icon={<PlusSquare size={16} />}
+          onClick={() => setOpen(false)}
+        />
+
+        <MobileItem
+          to="/list-service"
+          label="List Services"
+          icon={<List size={16} />}
+          onClick={() => setOpen(false)}
+        />
+
+        <MobileItem
+          to="/service-appointments" 
+          label="Service Appointments"
+          icon={<Calendar size={16} />}
+          onClick={() => setOpen(false)}
+        />
+        <div className={ns.mobileAuthContainer}>
+  {isSignedIn ? (
+    <button
+      onClick={() => {
+        handleSignOut();
+        setOpen(false);
+      }}
+      className={ns.mobileSignOutButton}
+    >
+      Sign Out
+    </button>
+  ) : (
+    <div className="space-y-2">
+      <button
+        onClick={() => {
+          handleOpenSignIn();
+          setOpen(false);
+        }}
+        className={ns.mobileLoginButton + " " + ns.cursorPointer}
+      >
+        Login
+      </button>
+    </div>
+  )}
+</div> 
+      </div>
+    </div>
+  </>
+)}
+      </nav>
     </header>
+  );
+};
+
+export default Navbar;
+
+// ---------------- COMPONENTS ----------------
+
+function CenterNavItem({ to, icon, label }) {
+  return (
+    <NavLink
+      to={to}
+      end
+      className={({ isActive }) =>
+        `nav-item ${isActive ? "active" : ""}`
+      }
+    >
+      {icon}
+      <span>{label}</span>
+    </NavLink>
+  );
+}
+
+function MobileItem({ to, icon, label, onClick }) {
+  return (
+    <NavLink to={to} onClick={onClick}>
+      {icon}
+      <span>{label}</span>
+    </NavLink>
   );
 }
