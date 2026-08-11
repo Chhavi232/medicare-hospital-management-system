@@ -1,122 +1,62 @@
-# 🏥 MediCare Hospital Management System
+# MediCare Hospital Management System
 
-## 📌 Project Overview
+A full-stack hospital management system developed using React.js, Node.js, Express.js, and MongoDB.
 
-MediCare Hospital Management System is a full-stack web application developed to streamline hospital operations, including doctor management, patient appointments, diagnostic service bookings, and hospital analytics. The application provides an intuitive interface for hospital staff while maintaining structured patient and operational data using MongoDB.
+## Technologies Used
 
----
-
-## 🎯 Features
-
-- Doctor Management
-- Patient Appointment Booking
-- Queue-Based Appointment System (FIFO)
-- Multi-stage Consultation Workflow
-- Diagnostic Service Management
-- Service Appointment Booking
-- Real-Time Analytics Dashboard
-- RESTful APIs
-- Search & Filter Functionality
-
----
-
-## 🛠️ Tech Stack
-
-### Frontend
-- HTML5
-- CSS3
+- React.js
+- Vite
 - JavaScript
-
-### Backend
 - Node.js
 - Express.js
-
-### Database
 - MongoDB
 - Mongoose
 
-### Tools
-- Postman
-- MongoDB Compass
-- Git & GitHub
-- Visual Studio Code
+## Frontend
 
----
+The frontend is developed using React.js and Vite.
 
-## 📂 Project Structure
+The React application is organized into reusable components and separate pages. The project contains:
 
-```
-Hospital-Management-System
-│
-├── models
-├── routes
-├── public
-├── app.js
-├── package.json
-├── README.md
-```
+- React components
+- Multiple application pages
+- Assets
+- Main application file
+- CSS styling
 
----
+## Backend
 
-## 🔄 Workflow
+The backend is developed using Node.js and Express.js.
 
-Doctor Registration
-        ↓
-Patient Registration
-        ↓
-Appointment Booking
-        ↓
-FIFO Queue Management
-        ↓
-Junior Doctor Consultation
-        ↓
-Senior Doctor Consultation
-        ↓
-Diagnostic Services
-        ↓
-Analytics Dashboard
+It contains:
 
----
+- Controllers
+- Models
+- Routes
+- Middleware
+- Configuration
+- Utility functions
+- Server implementation
 
-## 📊 Key Functionalities
+MongoDB and Mongoose are used for database management.
 
-- Manage doctor profiles
-- Book patient appointments
-- Queue-based consultation management
-- Clinical notes & prescription tracking
-- Diagnostic service booking
-- Dashboard with hospital statistics
-- Revenue & appointment analytics
+## Project Structure
 
----
+- `src/` – React frontend source code
+- `components/` – Reusable React components
+- `pages/` – Application pages
+- `assets/` – Frontend assets
+- `backend/` – Backend implementation
+- `controllers/` – Backend controllers
+- `models/` – Database models
+- `routes/` – API routes
+- `middlewares/` – Backend middleware
+- `config/` – Configuration files
+- `utils/` – Utility functions
 
-## 🔗 REST API Modules
+## How to Run
 
-- Doctors
-- Appointments
-- Services
-- Service Appointments
-- Dashboard Analytics
+Install the required dependencies using:
 
----
-
-## 💻 Skills Demonstrated
-
-- Full Stack Development
-- REST API Development
-- MongoDB Database Design
-- Express.js
-- Node.js
-- Backend Development
-- CRUD Operations
-- Database Modeling
-
----
-
-## 🚀 Future Enhancements
-
-- User Authentication
-- Role-Based Access Control
-- Online Payments
-- Email Notifications
-- Cloud Deployment
+```bash
+npm install
