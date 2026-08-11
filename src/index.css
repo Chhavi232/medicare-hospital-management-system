@@ -1,0 +1,6 @@
+@import "tailwindcss" source(none);
+
+@source "./App.jsx";
+@source "./main.jsx";
+@source "./components/**/*.jsx";
+@source "./pages/**/*.jsx";
